@@ -1,4 +1,5 @@
 using CorrelationId;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
@@ -9,6 +10,10 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
 builder.Services.AddScoped<IEventBus, EventBus>();
 builder.Services.AddSingleton<SerilogCorrelationIdEnricher>();
+
+builder.Services.AddMediatR(typeof(Program));
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CorrelationIdPipelineBehavior<,>));
+
 
 builder.Host.UseSerilog((_, serviceProvider, config) =>
 {
@@ -25,10 +30,13 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 
 app.UseRouting();
 
-app.MapGet("/ok", ([FromServices] IEventBus eventBus) =>
+app.MapGet("/ok", async ([FromServices] IEventBus eventBus,
+    [FromServices] IMediator mediator) =>
 {
     eventBus.SendEvent();
-    return Results.Ok("ok");
+    var user = await mediator.Send(new GetUserQuery(userId: 2));
+
+    return Results.Ok(user);
 });
 
 app.Run();
