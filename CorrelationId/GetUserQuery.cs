@@ -8,12 +8,12 @@ namespace CorrelationId
         public string Name { get; set; }
     }
 
-    public class BaseRequest : IRequest<User>
+    public class BaseRequest<T> : IRequest<T>
     {
         public string? CorrelationId { get; set; }
     }
 
-    public class GetUserQuery : BaseRequest
+    public class GetUserQuery : BaseRequest<User>
     {
         public GetUserQuery(int userId)
         {
