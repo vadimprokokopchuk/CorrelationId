@@ -15,7 +15,7 @@ namespace CorrelationId
         public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
             CancellationToken cancellationToken)
         {
-            if (request is BaseRequest baseRequest)
+            if (request is BaseRequest<TRequest> baseRequest)
             {
                 baseRequest.CorrelationId = _context.CorrelationId;
             }

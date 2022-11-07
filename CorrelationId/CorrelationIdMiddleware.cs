@@ -3,6 +3,7 @@
     public class CorrelationIdMiddleware
     {
         private readonly RequestDelegate _next;
+        private const string XCorrelationIdHeaderName = "X-Correlation-ID";
 
         public CorrelationIdMiddleware(RequestDelegate next)
         {
@@ -11,26 +12,23 @@
 
         public async Task InvokeAsync(HttpContext context)
         {
-            // scoped service: live while live HttpContext for one request
-            var correlationContext = context.RequestServices.GetRequiredService<ICorrelationContext>();
-            var correlationId = context.Request.Headers["X-Correlation-ID"].ToString();
+            var correlationContext = context.RequestServices.GetRequiredService<ICorrelationContext>(); // scoped service
+            var xCorrelationId = context.Request.Headers[XCorrelationIdHeaderName].ToString();
            
-            if (!string.IsNullOrEmpty(correlationId))
+            if (!string.IsNullOrEmpty(xCorrelationId))
             {
-                correlationContext.UseCorrelationId(correlationId);
+                correlationContext.UseCorrelationId(xCorrelationId);
+            }
+            
+            var correlationId = correlationContext.CorrelationId;
+            
+            if (context.Response.Headers.ContainsKey(XCorrelationIdHeaderName))
+            {
+                context.Response.Headers[XCorrelationIdHeaderName] = correlationId;
             }
             else
             {
-                correlationId = correlationContext.CorrelationId;
-            }
-
-            if (context.Response.Headers.ContainsKey("X-Correlation-ID"))
-            {
-                context.Response.Headers["X-Correlation-ID"] = correlationId;
-            }
-            else
-            {
-                context.Response.Headers.Add("X-Correlation-ID", correlationId);
+                context.Response.Headers.Add(XCorrelationIdHeaderName, correlationId);
             }
 
             await _next(context);
